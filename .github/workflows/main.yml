@@ -1,0 +1,30 @@
+name: Sync main to staging
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create PR main -> staging
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING=$(gh pr list --base staging --head main --state open --json number --jq 'length')
+          if [ "$EXISTING" = "0" ]; then
+            gh pr create --base staging --head main \
+              --title "Sync: main → staging" \
+              --body "Auto-sync of production changes into staging." \
+              || echo "Nothing to sync"
+          else
+            echo "Sync PR already open"
+          fi
